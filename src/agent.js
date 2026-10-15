@@ -23,7 +23,8 @@ export class Agent {
         if (!existing || home.length < existing.length) this.routeHome.set(cell, home);
       }
     }
-    for (const cell of this.belief.keys()) if (!this.routeHome.has(cell)) this.belief.set(cell, 0);
+    const reachable = paths(publicMission.map, publicMission.start);
+    for (const cell of this.belief.keys()) if (!reachable.has(cell)) this.belief.set(cell, 0);
     this.normalize();
     this.updateSignal(publicMission.initialSignal, true);
   }
@@ -48,7 +49,7 @@ export class Agent {
       logs.set(k, prior > 0 ? Math.log(prior) - 0.5 * (radial ** 2 + angular ** 2) : -Infinity);
     }
     const max = Math.max(...logs.values());
-    for (const [k, log] of logs) this.belief.set(k, Math.exp(log - max));
+    for (const [k, log] of logs) this.belief.set(k, log === -Infinity ? 0 : Math.exp(Math.max(-700, log - max)));
     this.normalize();
     this.evidence.push({ type: initial ? 'initial_signal' : 'scan_signal', ...clone(signal) });
   }
