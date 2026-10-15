@@ -108,8 +108,6 @@ test/           Node's built-in test suite
 
 ## Verification and limits
 
-`npm test` covers successful contact, recharge decisions, hidden-state isolation, reproducibility, invalid actions/configs, evidence updates, disconnected map regions, low-resource termination, replay script syntax/escaping, and CLI errors. A 30-seed regression checks normalized posteriors, bounded execution, and sufficient battery/time to return to a charger after every action. All 13 tests passed locally on Node 24.
-
-[`ci/test.yml.example`](ci/test.yml.example) is an optional GitHub Actions workflow for Node 22 and 24. To enable it, copy it to `.github/workflows/test.yml` using credentials with workflow permission. It is included as a template because the credential used to create this repository could not upload active workflows. Hosted CI has not been run.
+`npm test` covers successful contact, recharge decisions, hidden-state isolation, reproducibility, invalid actions/configs, evidence updates, disconnected map regions, low-resource termination, replay script syntax/escaping, and CLI errors. A 30-seed regression checks normalized posteriors, bounded execution, and sufficient battery/time to return to a charger after every action. All 13 tests passed locally on Node 24. GitHub Actions also passed the test suite and sample mission on both Node 22 and Node 24; the active workflow is in [`.github/workflows/test.yml`](.github/workflows/test.yml).
 
 The replay has also been checked in a browser, including timeline navigation and the final contact frame. The planner is a greedy probability-per-distance policy, not an optimal POMDP solver. Walls and charger locations are known; obstacle discovery, moving targets, decoys, multiple agents, and physics simulation are outside this version. The signal model assumes unoccluded radio and fixed Gaussian noise. Large maps serialize a full probability grid per step, so traces and replay files can grow substantially.
