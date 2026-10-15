@@ -1,0 +1,41 @@
+{
+  "name": "Too far from home",
+  "seed": 7,
+  "map": {
+    "width": 12,
+    "height": 6,
+    "obstacles": []
+  },
+  "start": [
+    0,
+    2
+  ],
+  "chargers": [
+    [
+      0,
+      2
+    ]
+  ],
+  "resources": {
+    "battery": 10,
+    "time": 50,
+    "moveCost": 1,
+    "scanCost": 2,
+    "moveTime": 1,
+    "scanTime": 2,
+    "rechargeTime": 5
+  },
+  "sensor": {
+    "bearingSigma": 0.2,
+    "rangeSigma": 1.5
+  },
+  "initialSignal": {
+    "origin": [
+      0,
+      2
+    ],
+    "bearing": 0.5518745974057688,
+    "strength": 0.08404828329462251,
+    "timestamp": 0
+  }
+}

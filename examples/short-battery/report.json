@@ -1,0 +1,119 @@
+{
+  "mission": "Too far from home",
+  "seed": 7,
+  "outcome": "inconclusive",
+  "reason": "No remaining search trip fits the battery capacity and time budget.",
+  "inferredLocation": [
+    11,
+    3
+  ],
+  "locationConfidence": 0.4995501109225863,
+  "inferredStatus": "damaged",
+  "statusConfidence": 0.8,
+  "evidence": [
+    {
+      "type": "initial_signal",
+      "origin": [
+        0,
+        2
+      ],
+      "bearing": 0.5518745974057688,
+      "strength": 0.08404828329462251,
+      "timestamp": 0
+    },
+    {
+      "type": "scan_signal",
+      "origin": [
+        0,
+        2
+      ],
+      "bearing": -0.18918979208905773,
+      "range": 11.117223701225214,
+      "timestamp": 2
+    },
+    {
+      "type": "scan_signal",
+      "origin": [
+        3,
+        2
+      ],
+      "bearing": -0.027512346580695343,
+      "range": 9.376024100881189,
+      "timestamp": 7
+    },
+    {
+      "type": "clue",
+      "id": "clue-1",
+      "position": [
+        2,
+        2
+      ],
+      "hint": [
+        9.906977440241755,
+        0.17495191856237602
+      ],
+      "sigma": 1.5,
+      "status": "damaged",
+      "reliability": 0.8,
+      "timestamp": 7
+    },
+    {
+      "type": "scan_signal",
+      "origin": [
+        0,
+        2
+      ],
+      "bearing": -0.30583846083119953,
+      "range": 13.317075864768135,
+      "timestamp": 17
+    },
+    {
+      "type": "scan_signal",
+      "origin": [
+        3,
+        2
+      ],
+      "bearing": 0.2404136299101202,
+      "range": 9.691564198425015,
+      "timestamp": 22
+    },
+    {
+      "type": "scan_signal",
+      "origin": [
+        0,
+        2
+      ],
+      "bearing": -0.09833722686821524,
+      "range": 11.122643517475204,
+      "timestamp": 32
+    },
+    {
+      "type": "scan_signal",
+      "origin": [
+        3,
+        2
+      ],
+      "bearing": 0.3892758330234355,
+      "range": 6.822546295814293,
+      "timestamp": 37
+    },
+    {
+      "type": "scan_signal",
+      "origin": [
+        0,
+        2
+      ],
+      "bearing": 0.17162519553356936,
+      "range": 12.281037585124938,
+      "timestamp": 47
+    }
+  ],
+  "resources": {
+    "batteryRemaining": 6,
+    "batteryCapacity": 10,
+    "timeUsed": 49,
+    "timeBudget": 50
+  },
+  "actions": 30,
+  "recommendedNextStep": "Continue the search near [11,3]; provide more time, battery capacity, or a closer charger. Location remains unconfirmed."
+}
