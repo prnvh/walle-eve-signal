@@ -13,23 +13,6 @@ const escapeHtml = (value) =>
       ],
   );
 
-export function markdownReport(report) {
-  return (
-    `# ${report.mission}\n\nOutcome: **${report.outcome}**\n\n${report.reason}\n\n` +
-    `- Inferred location: [${report.inferredLocation}]\n- Location confidence: ${(100 * report.locationConfidence).toFixed(1)}%\n` +
-    `- Status: ${report.inferredStatus} (${(100 * report.statusConfidence).toFixed(1)}%)\n- Actions: ${report.actions}\n` +
-    `- Battery remaining: ${report.resources.batteryRemaining}/${report.resources.batteryCapacity}\n` +
-    `- Time used: ${report.resources.timeUsed}/${report.resources.timeBudget}\n\n` +
-    `## Recommended next step\n\n${report.recommendedNextStep}\n\n` +
-    `Confidence is the model's posterior probability, not an independently calibrated success rate. Only direct contact confirms EVE's location and status.\n\n` +
-    `## Evidence\n\n` +
-    report.evidence
-      .map((e) => `- ${e.type} at t=${e.timestamp}: \`${JSON.stringify(e)}\``)
-      .join("\n") +
-    "\n"
-  );
-}
-
 export function replayHtml(run) {
   const values = {
     __TITLE__: escapeHtml(run.mission.name),
@@ -52,7 +35,6 @@ export async function saveRun(run, folder) {
     join(folder, "run.json"),
     JSON.stringify(run, null, 2) + "\n",
   );
-  await writeFile(join(folder, "report.md"), markdownReport(run.report));
   await writeFile(join(folder, "replay.html"), replayHtml(run));
 }
 

@@ -1,16 +1,12 @@
 {
   "name": "walle-eve-signal",
-  "version": "1.0.0",
   "private": true,
-  "description": "A resource-aware robot searching for EVE through noisy signals and hidden clues",
   "type": "module",
   "engines": {
     "node": ">=22"
   },
   "scripts": {
     "start": "node mission.js",
-    "test": "node --test test.js",
-    "demo": "node mission.js --out examples",
     "preview": "node mission.js --preview"
   }
 }

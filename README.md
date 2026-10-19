@@ -1,58 +1,41 @@
 # WALL-E and EVE's Signal
 
-A hide-and-seek simulation. EVE is hidden on a grid. WALL-E searches by himself, follows imperfect readings, finds clues, and keeps enough battery and time to reach a charger.
-
-This is classical AI: rules, probability updates, and shortest-path search. No LLM, model training, dependencies, or API keys.
+WALL-E searches a grid for hidden EVE using noisy signals and clues. He chooses where to move and scan, updates his guesses, and keeps enough battery and time to reach a charger. This uses probability updates and shortest-path search, with no LLM or external dependencies.
 
 ## Run
 
-Requires **Node.js 22+**. There is nothing to install inside the project.
+Requires **Node.js 22+**. No installation step is needed.
 
 ```sh
-git clone https://github.com/prnvh/walle-eve-signal.git
-cd walle-eve-signal
 npm start
 npm run preview
 ```
 
-Open **http://127.0.0.1:4173**. Stop the preview with Ctrl+C. You can also open `runs/replay.html` directly without a server.
+Open **http://127.0.0.1:4173**. Stop the preview with Ctrl+C. The page replays a completed search; it does not control WALL-E. After changing a mission, run it again and restart the preview.
 
-`npm start` performs a complete search and saves the results. The page **replays that completed search**. Play, the slider, step buttons and arrow keys let you inspect it; they do not control WALL-E. After editing a mission, run it again and restart the preview.
+`npm start` creates `runs/run.json` (public settings, every action/observation/decision, and final report) and `runs/replay.html` (an offline replay you can open directly). Generated runs are ignored by Git. The preview also works before running anything, using `examples/run.json`.
 
-```sh
-npm test                                  # Automatic checks
-npm run demo                              # Refresh the checked-in example
-node mission.js my-mission.json --out runs # Run your own mission
-```
-
-## The whole repo
+## Files
 
 ```text
-mission.js                 Entry point: reads options and starts a job
+mission.js          Starts a mission or the preview
+mission.json        Settings to edit
 modules/
-  world.js                 loadMission(): create the hidden world
-  agent.js                 runMission(): run WALL-E's search
-  results.js               saveRun(): write data, report and replay
-  preview.js               startPreview(): serve the replay locally
-  helpers.js               Shared coordinates, sensor math and paths
-mission.json               The sample mission settings
-replay.html                Page layout and replay controls
-test.js                    Checks, including extra test missions
-package.json               The npm command shortcuts
-README.md                  This guide
-.gitignore                 Keeps local generated runs out of Git
-.github/workflows/test.yml  Tests on GitHub (Node 22 and 24)
-examples/
-  run.json                 Public settings + full trace + final report
-  report.md                The report in readable text
-  replay.html              Ready-to-open replay with results included
+  world.js          Load settings, hide EVE, perform actions
+  agent.js          Update guesses, choose actions, run the search
+  helpers.js        Coordinates, sensor noise and shortest paths
+  results.js        Save the results and build the replay
+  preview.js        Show the replay in a browser
+replay.html         Browser layout and controls
+examples/run.json   One sample trace and final report
+package.json        Node settings and command shortcuts
+README.md           This guide
+.gitignore          Excludes generated files
 ```
-
-There are **16 tracked files**. `mission.js` is a short entry point; the five modules each have one clear job. Related functions stay together rather than creating a separate file for every small helper. The three example files are generated deliverables, not extra code to maintain. Local results go into the ignored `runs/` folder in the same format.
 
 ## How it works
 
-Read `mission.json` first, then `mission.js`. Its main work is just:
+`mission.js` calls three functions:
 
 ```js
 const world = await loadMission(file);
@@ -60,64 +43,28 @@ const run = runMission(world);
 await saveRun(run, folder);
 ```
 
-`loadMission()` reads JSON and builds the world. `runMission()` performs the search. `saveRun()` writes the results. The fourth main function, `startPreview()`, is called instead when you use `npm run preview`.
+Inside `runMission()`, WALL-E repeatedly **chooses an action → gets the world's response → updates his guesses**. The world knows EVE's location; the agent only receives public map information and observations. Private fields beginning with `#` keep the hidden answer inside the world.
 
-```text
-Read settings -> create world and WALL-E
-                         |
-Choose action -> world performs it -> update guesses
-       ^                                  |
-       +------------- repeat -------------+
-                         |
-          Found EVE or cannot continue -> save results
-```
+Each reachable square has a probability of containing EVE. Signals and clues change those probabilities; visiting an empty square rules it out. The agent favors high-probability nearby squares using `probability / (stepsAway + 1)`. Breadth-first search finds routes around walls. Trips must leave enough battery and time to reach a charger. He scans periodically when affordable, returns/recharges when needed, and stops after direct contact or when no more search trips fit.
 
-The modules contain the details:
+## Mission settings
 
-| Module | Job |
-| --- | --- |
-| `helpers.js` | Name squares, generate repeatable sensor errors, find shortest paths |
-| `world.js` | Validate settings, hide EVE and clues, perform actions and charge costs |
-| `agent.js` | Hold WALL-E's guesses, choose actions, and repeat the decide/act/learn loop |
-| `results.js` | Write the data, report and replay |
-| `preview.js` | Start a local server showing the saved replay |
+Edit `mission.json`. Coordinates are `[x,y]`, starting at the top left.
 
-The world and agent are separate objects in separate modules. The world knows where EVE is. The agent gets only public map information and observations. Fields beginning with `#` are private to the world, so the agent cannot read the hidden answer. A `class` groups data and functions; `this` means the particular world or agent being used.
+- `map`: width/height (2–60) and obstacle coordinates. `start` must be a free cell with a charger; `chargers` lists charging locations.
+- `target` and `targetStatus`: the world's hidden EVE position and `active`, `dormant`, or `damaged` status. Omit `target` for seeded placement.
+- `clues`: hidden clue positions; omit for `clueCount` seeded clues (default 4, maximum 100).
+- `seed`: integer 0–4294967295, making placement and sensor errors repeatable.
+- `resources`: positive battery capacity, deadline, move/scan energy costs, move/scan time costs, and recharge time.
+- `sensor`: positive `bearingSigma` (direction error in radians) and `rangeSigma` (distance error in grid units).
+- `initialSignal`: optional origin, bearing, strength in (0,1], and timestamp relative to mission start. Negative timestamps indicate older, less precise readings. Estimated distance is `1 / strength - 1`.
 
-The main agent methods are:
+Movement is one square up/down/left/right. Scans reveal noisy direction/distance and clues within distance 1.5. Recharge restores battery at a charger and costs time. EVE stays still; walls affect movement, not radio signals. Clue positions are learned only by scanning. Their coordinate hints are noisy; status hints are truthful in the simulator but treated as 80% reliable by the agent. JSON is supported, not YAML.
 
-- **`updateSignal()`**: make squares more or less likely based on a reading.
-- **`observe()`**: learn from readings, clues and contact. Rule out empty visited squares.
-- **`decide()`**: scan or move while resources allow it, then return, recharge or stop.
-- **`summary()`**: give the best location/status guess and confidence.
+To run a different configuration: `node mission.js my-mission.json --out runs`.
 
-Each reachable square starts equally likely. A reading suggesting EVE is five squares to the right raises the chances of squares in that direction. `normalize()` makes all probabilities add up to 1 (100%). Log/exp calculations preserve very small probabilities instead of rounding them away.
+## Sample result
 
-The agent ranks candidates using `probability / (stepsAway + 1)`. It checks that both the outward trip **and a return to a charger** fit battery and time. Paths use breadth-first search: check the nearest squares first, then work outward. Scans refresh the signal after three actions when a candidate and the return reserve allow it.
+`examples/run.json` has three sections: `mission` (public settings), `trace` (full action history and beliefs), and `report` (evidence, inferred location/status, confidence, resources, and recommended next step). The sample finds dormant EVE at `[12,2]` in **46 actions**, using **69/160 time**, with **9/25 battery** left.
 
-## Change the mission
-
-Edit `mission.json`. Coordinates are `[x,y]`, starting at the top left. X increases rightward; Y increases downward.
-
-| Setting | Meaning |
-| --- | --- |
-| `map` | Width/height (2–60) and blocked squares in `obstacles` |
-| `start`, `chargers` | Starting square and chargers; start must have a charger |
-| `target`, `targetStatus` | Hidden EVE position and status: `active`, `dormant`, or `damaged` |
-| `clues` | Hidden clue positions; scanning within distance 1.5 reveals them once |
-| `seed` | Integer 0–4294967295; same settings and seed give the same run |
-| `resources` | Battery capacity, deadline, move/scan energy costs, move/scan time costs, recharge time |
-| `sensor` | `bearingSigma`: direction error in radians; `rangeSigma`: distance error in grid units |
-| `initialSignal` | Origin, bearing in radians, strength in (0,1], timestamp relative to mission start |
-
-All resource costs and sensor error settings must be positive. Omit `target` for a seeded reachable hiding place. Omit `clues` for `clueCount` generated clues (default 4, range 0–100). Omit `initialSignal` for a generated reading. Older readings have negative timestamps and are treated as less precise. Strength maps to distance as `1 / strength - 1`. JSON is supported; YAML is not.
-
-Movement is one square up/down/left/right. Scans give noisy bearing/range readings and nearby clues. Recharging restores battery at a charger and consumes time. Direct contact confirms EVE after any action. Invalid/unaffordable actions fail without changing the world. Walls affect movement, not signals. Clue coordinate hints are noisy; status hints are truthful in the simulator but the agent conservatively treats them as 80% reliable.
-
-## Results and checks
-
-The example finds dormant EVE at `[12,2]` after **46 actions**, using **69/160 time**, with **9/25 battery** left. `examples/run.json` contains `mission` (public settings), `trace` (every action, observation, decision reason and probability map), and `report` (evidence, inferred location/status, confidence, resources and recommended next step).
-
-`npm test` checks successful searches, recharging, hidden information, repeatability, invalid inputs/actions, status updates, disconnected maps, safe inconclusive searches, replay escaping, saved outputs, and the preview server. A 30-seed regression checks probability totals and battery/time reserves after every action. GitHub tests Node 22 and 24.
-
-Confidence describes the agent's model, not a guaranteed success rate. Only contact confirms EVE. This is a greedy planner, not an optimal solver. The world is static with known walls and chargers; moving targets, decoys, learned models, multiple robots and physics are not implemented. A 10,000-action safety limit bounds execution. Full probability maps make large traces grow quickly.
+Confidence describes the agent's guesses, not a guaranteed success rate. Only direct contact confirms EVE. This is a greedy planner, not an optimal solver or trained model. It assumes known walls/chargers and a static target; a 10,000-action limit bounds execution. Regression checks were run before trimming the deliverable; test scaffolding and CI are not included in this minimal version.
