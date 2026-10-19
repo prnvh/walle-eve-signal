@@ -6,6 +6,54 @@ This is a complete, deterministic simulation with an offline mission replay. It 
 
 ![Warehouse mission replay](examples/replay-preview.png)
 
+## First time reading the code?
+
+Think of this as hide-and-seek on a board made of squares. EVE is hidden on one square. WALL-E must find her before his battery or time runs out. He can move, scan for clues, and recharge. He chooses these actions himself.
+
+There are two separate roles: the **world** knows where EVE is, and the **agent** tries to work it out. The world does not hand the answer to the agent. It only gives the readings and clues his actions uncover. WALL-E knows the walls and charger locations from the start; EVE and the clues are hidden.
+
+The code is plain JavaScript. Node.js runs it on your computer. There is no model training or ChatGPT call: the agent uses rules and probability calculations.
+
+```text
+walle-eve-signal/
+  src/
+    cli.js             Starts the program and saves the results
+    world.js           The board, hidden EVE, action rules and sensor readings
+    agent.js           WALL-E's guesses and decisions
+    output.js          Turns the results into a report and a browser replay
+  missions/            Settings for three different searches
+  examples/            Saved results you can inspect without running anything
+  test/                Automatic checks that the program behaves correctly
+  .github/workflows/   Tells GitHub to run the checks when code is pushed
+  package.json         Defines shortcuts such as npm start and npm test
+  README.md            This explanation and the run instructions
+```
+
+Here is what happens when you run `npm start`:
+
+1. `cli.js` reads `missions/warehouse.json`. That file describes the board, starting position, battery, costs, hidden EVE and clues.
+2. `world.js` creates the world. `agent.js` receives a copy of only the information WALL-E is allowed to know.
+3. The `runMission()` function in `agent.js` repeats a small loop: **choose an action → let the world carry it out → read the result → update the guesses**.
+4. This continues until EVE is found or no more search trips fit the remaining resources.
+5. `cli.js` uses `output.js` to save the action history, final report and replay page.
+
+The main methods to read in `agent.js` are:
+
+| Method | In everyday words |
+| --- | --- |
+| `constructor()` | Set up WALL-E's memory and initial guesses |
+| `updateSignal()` | Make squares more or less likely based on a signal reading |
+| `observe()` | Record what just happened and update the guesses |
+| `decide()` | Choose whether to move, scan, recharge or stop |
+| `summary()` | Give the current best guess and how confident it is |
+| `runMission()` | Keep the whole search loop running and build the final report |
+
+For example, a scan might suggest that EVE is roughly five squares to the right. WALL-E raises the chances of nearby squares in that direction. If he checks a square and she is absent, he rules it out. He chooses a promising square he can reach while keeping enough battery and time to get to a charger. Actual contact is needed to confirm he found EVE.
+
+The browser page is a **replay of a completed search**. Play and the slider move through saved actions; they do not send commands to a running agent. To change the search, edit a mission file and run the program again. For example, change `resources.battery` to give WALL-E more or less energy. The mission's `target` value changes where the world hides EVE; the agent still has to discover her.
+
+Suggested reading order: **`missions/warehouse.json` → `src/cli.js` → `runMission()` in `src/agent.js` → `decide()` and `observe()` → `src/world.js`**. Read `src/output.js` last if you want to understand the display. Most of its length is the replay's HTML, CSS and browser controls.
+
 ## Run it
 
 Install **Node.js 22 or newer**, then:
