@@ -4,10 +4,13 @@
   "private": true,
   "description": "A resource-aware robot searching for EVE through noisy signals and hidden clues",
   "type": "module",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
-    "start": "node src/cli.js missions/warehouse.json --out runs/warehouse",
-    "test": "node --test",
-    "demo": "node src/cli.js missions/warehouse.json --out examples/warehouse"
+    "start": "node mission.js",
+    "test": "node --test test.js",
+    "demo": "node mission.js --out examples",
+    "preview": "node mission.js --preview"
   }
 }
