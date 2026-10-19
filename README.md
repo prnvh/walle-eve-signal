@@ -28,7 +28,13 @@ node mission.js my-mission.json --out runs # Run your own mission
 ## The whole repo
 
 ```text
-mission.js                 All the simulation and agent code
+mission.js                 Entry point: reads options and starts a job
+modules/
+  world.js                 loadMission(): create the hidden world
+  agent.js                 runMission(): run WALL-E's search
+  results.js               saveRun(): write data, report and replay
+  preview.js               startPreview(): serve the replay locally
+  helpers.js               Shared coordinates, sensor math and paths
 mission.json               The sample mission settings
 replay.html                Page layout and replay controls
 test.js                    Checks, including extra test missions
@@ -42,11 +48,19 @@ examples/
   replay.html              Ready-to-open replay with results included
 ```
 
-There are **11 tracked files**. Only two contain application code: `mission.js` and `replay.html`. The three example files are generated deliverables, not extra code to maintain. Local results go into the ignored `runs/` folder in the same format.
+There are **16 tracked files**. `mission.js` is a short entry point; the five modules each have one clear job. Related functions stay together rather than creating a separate file for every small helper. The three example files are generated deliverables, not extra code to maintain. Local results go into the ignored `runs/` folder in the same format.
 
 ## How it works
 
-Read `mission.json` first, then `runMission()` inside `mission.js`.
+Read `mission.json` first, then `mission.js`. Its main work is just:
+
+```js
+const world = await loadMission(file);
+const run = runMission(world);
+await saveRun(run, folder);
+```
+
+`loadMission()` reads JSON and builds the world. `runMission()` performs the search. `saveRun()` writes the results. The fourth main function, `startPreview()`, is called instead when you use `npm run preview`.
 
 ```text
 Read settings -> create world and WALL-E
@@ -58,18 +72,17 @@ Choose action -> world performs it -> update guesses
           Found EVE or cannot continue -> save results
 ```
 
-`mission.js` has six commented sections:
+The modules contain the details:
 
-| Section | Job |
+| Module | Job |
 | --- | --- |
-| 1. Helpers | Name squares, generate repeatable sensor errors, find shortest paths |
-| 2. World | Validate settings, hide EVE and clues, perform actions and charge costs |
-| 3. Agent | Hold WALL-E's guesses and choose actions |
-| 4. Main loop | Ask the agent to decide, the world to act, and the agent to learn |
-| 5. Results | Write the data, report and replay |
-| 6. Commands | Handle running a mission or starting the preview server |
+| `helpers.js` | Name squares, generate repeatable sensor errors, find shortest paths |
+| `world.js` | Validate settings, hide EVE and clues, perform actions and charge costs |
+| `agent.js` | Hold WALL-E's guesses, choose actions, and repeat the decide/act/learn loop |
+| `results.js` | Write the data, report and replay |
+| `preview.js` | Start a local server showing the saved replay |
 
-The world and agent are separate objects even though they live in one file. The world knows where EVE is. The agent gets only public map information and observations. Fields beginning with `#` are private to the world, so the agent cannot read the hidden answer. A `class` groups data and functions; `this` means the particular world or agent being used.
+The world and agent are separate objects in separate modules. The world knows where EVE is. The agent gets only public map information and observations. Fields beginning with `#` are private to the world, so the agent cannot read the hidden answer. A `class` groups data and functions; `this` means the particular world or agent being used.
 
 The main agent methods are:
 
@@ -105,6 +118,6 @@ Movement is one square up/down/left/right. Scans give noisy bearing/range readin
 
 The example finds dormant EVE at `[12,2]` after **46 actions**, using **69/160 time**, with **9/25 battery** left. `examples/run.json` contains `mission` (public settings), `trace` (every action, observation, decision reason and probability map), and `report` (evidence, inferred location/status, confidence, resources and recommended next step).
 
-`npm test` checks successful searches, recharging, hidden information, repeatability, invalid inputs/actions, status updates, disconnected maps, safe inconclusive searches, replay escaping, and saved outputs. A 30-seed regression checks probability totals and battery/time reserves after every action. GitHub tests Node 22 and 24.
+`npm test` checks successful searches, recharging, hidden information, repeatability, invalid inputs/actions, status updates, disconnected maps, safe inconclusive searches, replay escaping, saved outputs, and the preview server. A 30-seed regression checks probability totals and battery/time reserves after every action. GitHub tests Node 22 and 24.
 
 Confidence describes the agent's model, not a guaranteed success rate. Only contact confirms EVE. This is a greedy planner, not an optimal solver. The world is static with known walls and chargers; moving targets, decoys, learned models, multiple robots and physics are not implemented. A 10,000-action safety limit bounds execution. Full probability maps make large traces grow quickly.

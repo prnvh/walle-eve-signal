@@ -4,15 +4,11 @@ import { readFile, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
-import {
-  Agent,
-  runMission,
-  Environment,
-  key,
-  paths,
-  validate,
-  replayHtml,
-} from "./mission.js";
+import { Agent, runMission } from "./modules/agent.js";
+import { Environment, validate } from "./modules/world.js";
+import { key, paths } from "./modules/helpers.js";
+import { replayHtml } from "./modules/results.js";
+import { startPreview } from "./modules/preview.js";
 
 const warehouse = JSON.parse(
   await readFile(new URL("./mission.json", import.meta.url), "utf8"),
@@ -312,5 +308,21 @@ test("CLI saves a custom mission with its full trace, report and offline replay"
   const html = await readFile(join(results, 'replay.html'), 'utf8');
   const embedded = html.match(/<script id="run-data" type="application\/json">([\s\S]*?)<\/script>/)[1];
   assert.deepEqual(JSON.parse(embedded), saved);
+  assert.ok(!html.includes('__RUN_DATA__'));
+});
+
+test("preview module serves an offline replay", async (t) => {
+  // Port 0 lets the operating system choose an unused port for this test.
+  const server = await startPreview(0);
+  t.after(() => new Promise((resolve, reject) => {
+    server.close(error => error ? reject(error) : resolve());
+    server.closeAllConnections();
+  }));
+  const response = await fetch('http://127.0.0.1:' + server.address().port);
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get('content-type'), /text\/html/);
+  const html = await response.text();
+  assert.match(html, /id="run-data"/);
+  assert.match(html, /Mission step/);
   assert.ok(!html.includes('__RUN_DATA__'));
 });
